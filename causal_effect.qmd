@@ -1,0 +1,66 @@
+---
+title: "N Parameters"
+author: "Alan Tao"
+format: html
+execute:
+  echo: false
+---
+
+The question is: What is the causal effect of postcards on voting in the 2026 election? Do those effects vary by political engagement? I have cleaned the data and also did an exploratory plot of civil engagement and voting. 
+
+
+```{r}
+#| label: setup
+#| message: false
+
+library(tidyverse)
+library(primer.data)
+```
+
+```{r}
+#| label: data cleaning
+
+ch10_data <-
+  shaming |>
+  mutate(
+    p_00 = (primary_00 == "Yes"),
+    p_02 = (primary_02 == "Yes"),
+    p_04 = (primary_04 == "Yes"),
+    g_00 = (general_00 == "Yes"),
+    g_02 = (general_02 == "Yes"),
+    g_04 = (general_04 == "Yes"),
+    civ_engage = p_00 + p_02 + p_04 + g_00 + g_02 + g_04,
+    voter_class = case_when(
+      civ_engage %in% c(5, 6) ~ "Always Vote",
+      civ_engage %in% c(3, 4) ~ "Sometimes Vote",
+      civ_engage %in% c(1, 2) ~ "Rarely Vote"
+    ),
+    voter_class = factor(
+      voter_class,
+      levels = c("Rarely Vote", "Sometimes Vote", "Always Vote")
+    ),
+    age_z = as.numeric(scale(age))
+  ) |>
+  rename(voted = primary_06) |>
+  select(voted, treatment, sex, age_z, civ_engage, voter_class) |>
+  drop_na() |>
+  slice_sample(prop = 0.1)
+```
+
+```{r}
+#| label: plot
+
+ch10_data |> sample_frac(0.5) |>
+  ggplot(aes(x = civ_engage, y = voted)) +
+  geom_jitter(alpha = 0.03, height = 0.1) +
+  scale_x_continuous(breaks = 1:6) +
+  scale_y_continuous(breaks = c(0, 1), labels = c("No", "Yes")) +
+  labs(
+    title = "Civic Engagement and Voting Behavior in Michigan",
+    subtitle = "Past voting predicts future voting.",
+    x = "Civil Engagement",
+    y = "Voted in 2006 Primary Election"
+  )
+```
+
+
